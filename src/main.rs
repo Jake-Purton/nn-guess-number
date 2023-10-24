@@ -126,6 +126,7 @@ fn click_system(
     id: Res<ImageId>,
     mut images: ResMut<Assets<Image>>,
     windows: Query<&Window, With<PrimaryWindow>>,
+    keys: Res<Input<KeyCode>>,
 ) {
     if buttons.pressed(MouseButton::Left) {
         let handle = Handle::weak(id.id);
@@ -145,6 +146,15 @@ fn click_system(
                 image.data[(index * 4) + 2] = 0;
                 image.data[(index * 4) + 3] = 255;
             }
+        }
+    }
+    if keys.just_pressed(KeyCode::C) {
+        
+        let handle = Handle::weak(id.id);
+
+        if let Some(image) = images.get_mut(&handle) {
+
+            image.data = vec![255; IMAGE_DIM * 4]
         }
     }
 }
