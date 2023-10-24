@@ -12,6 +12,9 @@ pub struct TrainedLinear {
     model: LinearModel,
 }
 
+#[derive(Component)]
+pub struct ColorText;
+
 #[derive(Resource)]
 pub struct ImageId {
     id: HandleId,
@@ -89,7 +92,7 @@ fn startup (
     commands
         .spawn(Camera2dBundle::default());
 
-    let data = vec![255; 4*28*28];
+    let data = vec![255; 4*IMAGE_DIM];
 
     let mut image = Image::new(
         Extent3d {
@@ -119,6 +122,29 @@ fn startup (
         ..default()
     });
 
+    commands.spawn((
+        // Create a TextBundle that has a Text with a single section.
+        TextBundle::from_section(
+            // Accepts a `String` or any type that converts into a `String`, such as `&str`
+            "",
+            TextStyle {
+                // This font is loaded and will be used instead of the default font.
+                font_size: 100.0,
+                color: Color::BLUE,
+                ..Default::default()
+            },
+        ) // Set the alignment of the Text
+        .with_text_alignment(TextAlignment::Center)
+        // Set the style of the TextBundle itself.
+        .with_style(Style {
+            position_type: PositionType::Absolute,
+            top: Val::Px(5.0),
+            left: Val::Px(5.0),
+            ..default()
+        }),
+        ColorText,
+    ));
+
 }
 
 fn click_system(
@@ -139,17 +165,32 @@ fn click_system(
                     (position.y * 28.0 / WINDOW_SIZE.y) as usize,
                 );
 
+                let mut index_vec: Vec<usize> = Vec::new();
                 let index = position.0 + (position.1 * 28);
 
-                image.data[index * 4] = 0;
-                image.data[(index * 4) + 1] = 0;
-                image.data[(index * 4) + 2] = 0;
-                image.data[(index * 4) + 3] = 255;
+                index_vec.push(index);
+                index_vec.push(index + 1);
+                index_vec.push(index + 28);
+                if index > 0 {
+                    index_vec.push(index - 1);
+                }
+                if index > 27 {
+                    index_vec.push(index - 28);
+                }
+
+                for index in index_vec {    
+                    if index * 4 < image.data.len() {
+                        image.data[index * 4] = 0;
+                        image.data[(index * 4) + 1] = 0;
+                        image.data[(index * 4) + 2] = 0;
+                        image.data[(index * 4) + 3] = 255;
+                    }             
+                }
             }
         }
     }
     if keys.just_pressed(KeyCode::C) {
-        
+
         let handle = Handle::weak(id.id);
 
         if let Some(image) = images.get_mut(&handle) {
@@ -164,6 +205,7 @@ fn guess_system(
     mut images: ResMut<Assets<Image>>,
     device: Res<MyDevice>,
     model: Res<TrainedLinear>,
+    mut text: Query<&mut Text, With<ColorText>>,
 ) {
 
     let handle = Handle::weak(id.id);
@@ -193,7 +235,7 @@ fn guess_system(
         let a = a
             .argmax(D::Minus1).unwrap().get(0).unwrap().to_scalar::<u32>().unwrap();
 
-        println!("{a}");
+        text.single_mut().sections[0].value = format!("Guess: {a}");
 
     }
 
