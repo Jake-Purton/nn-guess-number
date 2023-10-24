@@ -129,7 +129,7 @@ fn startup (
             "",
             TextStyle {
                 // This font is loaded and will be used instead of the default font.
-                font_size: 100.0,
+                font_size: 50.0,
                 color: Color::BLUE,
                 ..Default::default()
             },
